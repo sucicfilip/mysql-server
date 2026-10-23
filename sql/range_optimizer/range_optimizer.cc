@@ -687,7 +687,8 @@ int test_quick_select(THD *thd, MEM_ROOT *return_mem_root,
                                        Opt_trace_context::RANGE_OPTIMIZER);
       AccessPath *range_path = get_key_scans_params(
           thd, &param, tree, false, true, interesting_order,
-          skip_records_in_range, best_cost, /*ror_only=*/false, needed_reg);
+          skip_records_in_range, best_cost, /*ror_only=*/false,
+          /*for_index_merge=*/false, needed_reg);
 
       /* Get best 'range' plan and prepare data for making other plans */
       if (range_path) {
@@ -1038,7 +1039,7 @@ static AccessPath *get_best_disjunct_quick(
       if (!(*cur_child = get_key_scans_params(
                 thd, param, *tree_it, true, false, ORDER_NOT_RELEVANT,
                 skip_records_in_range, read_cost, /*ror_only=*/false,
-                needed_reg))) {
+                /*for_index_merge=*/true, needed_reg))) {
         /*
           One of index scans in this index_merge is more expensive than entire
           table read for another available option. The entire index_merge (and
@@ -1202,7 +1203,8 @@ static AccessPath *get_best_disjunct_quick(
       Opt_trace_object trace_idx(trace);
       roru_read_plans[i] = get_key_scans_params(
           thd, param, imerge->trees[i], true, false, ORDER_NOT_RELEVANT,
-          skip_records_in_range, read_cost, /*ror_only=*/true, needed_reg);
+          skip_records_in_range, read_cost, /*ror_only=*/true,
+          /*for_index_merge=*/true, needed_reg);
       if (roru_read_plans[i] == nullptr) return imerge_path;
     }
   }

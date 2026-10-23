@@ -84,7 +84,8 @@ AccessPath *get_key_scans_params(THD *thd, RANGE_OPT_PARAM *param,
                                  bool update_tbl_stats,
                                  enum_order interesting_order,
                                  bool skip_records_in_range, double cost_est,
-                                 bool ror_only, Key_map *needed_reg);
+                                 bool ror_only, bool for_index_merge,
+                                 Key_map *needed_reg);
 
 /*
   Calculate estimate of number records that will be retrieved by a range
