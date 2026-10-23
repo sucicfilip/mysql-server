@@ -376,3 +376,35 @@ SELECT /*+ INDEX_MERGE(t1 f3, primary) */ f2 FROM t1
 WHERE f1 = 'o' AND f2 = f3 AND f3 <= 4;
 
 DROP TABLE t1;
+
+--echo #
+--echo # Bug#121576 NO_INDEX_MERGE hint disables plain range access on the named indexes
+--echo #
+
+CREATE TABLE t1 (id INT PRIMARY KEY, a INT, b INT, KEY idx_a (a), KEY idx_b (b));
+INSERT INTO t1
+  WITH RECURSIVE seq (n) AS (SELECT 1 UNION ALL SELECT n + 1 FROM seq WHERE n < 1000)
+  SELECT n, n % 50, n % 500 FROM seq;
+INSERT INTO t1 SELECT id + 1000, a, b FROM t1;
+INSERT INTO t1 SELECT id + 2000, a, b FROM t1;
+INSERT INTO t1 SELECT id + 4000, a, b FROM t1;
+ANALYZE TABLE t1;
+
+--replace_regex $elide_costs
+EXPLAIN SELECT * FROM t1 WHERE a IN (5, 6);
+--replace_regex $elide_costs
+EXPLAIN SELECT /*+ NO_INDEX_MERGE(t1 idx_a) */ * FROM t1 WHERE a IN (5, 6);
+--replace_regex $elide_costs
+EXPLAIN SELECT /*+ NO_INDEX_MERGE(t1 idx_a) */ * FROM t1 WHERE a BETWEEN 5 AND 6;
+--replace_regex $elide_costs
+EXPLAIN SELECT /*+ NO_INDEX_MERGE(t1) */ * FROM t1 WHERE a IN (5, 6);
+--replace_regex $elide_costs
+EXPLAIN SELECT /*+ NO_INDEX_MERGE(t1 idx_a) */ * FROM t1 FORCE INDEX (idx_a) WHERE a IN (5, 6);
+--replace_regex $elide_costs
+EXPLAIN SELECT /*+ NO_INDEX_MERGE(t1 idx_b) */ * FROM t1 WHERE a = 5 AND b IN (10, 11);
+--replace_regex $elide_costs
+EXPLAIN SELECT /*+ NO_INDEX_MERGE(t1 idx_a) */ * FROM t1 WHERE a = 5 AND b = 10;
+--replace_regex $elide_costs
+EXPLAIN SELECT /*+ NO_INDEX_MERGE(t1 idx_a) */ * FROM t1 WHERE a IN (5, 6) OR b = 10;
+
+DROP TABLE t1;
